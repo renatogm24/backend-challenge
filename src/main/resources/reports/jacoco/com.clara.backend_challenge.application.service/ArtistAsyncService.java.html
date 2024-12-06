@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArtistAsyncService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend-challenge</a> &gt; <a href="index.source.html" class="el_package">com.clara.backend_challenge.application.service</a> &gt; <span class="el_source">ArtistAsyncService.java</span></div><h1>ArtistAsyncService.java</h1><pre class="source lang-java linenums">package com.clara.backend_challenge.application.service;
+
+import com.clara.backend_challenge.core.domain.Artist;
+import com.clara.backend_challenge.core.domain.Release;
+import com.clara.backend_challenge.core.exceptions.ArtistNotFoundException;
+import com.clara.backend_challenge.core.ports.output.ArtistRepository;
+import com.clara.backend_challenge.core.ports.output.DiscogsApiClient;
+import com.clara.backend_challenge.core.ports.output.ReleaseRepository;
+import io.github.resilience4j.retry.annotation.Retry;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+<span class="fc" id="L21">@Slf4j</span>
+@Component
+public class ArtistAsyncService {
+
+    private final ArtistRepository artistRepository;
+    private final ReleaseRepository releaseRepository;
+    private final DiscogsApiClient discogsApiClient;
+
+<span class="fc" id="L29">    public ArtistAsyncService(ArtistRepository artistRepository, ReleaseRepository releaseRepository, DiscogsApiClient discogsApiClient) {</span>
+<span class="fc" id="L30">        this.artistRepository = artistRepository;</span>
+<span class="fc" id="L31">        this.releaseRepository = releaseRepository;</span>
+<span class="fc" id="L32">        this.discogsApiClient = discogsApiClient;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Async
+    @Transactional
+    public void enrichReleasesAsync(List&lt;Release&gt; releases, Long artistId) {
+<span class="fc" id="L38">        log.info(&quot;Starting asynchronous enrichment of genres for artist ID: {}&quot;, artistId);</span>
+
+        try {
+<span class="fc" id="L41">            enrichReleases(releases);</span>
+
+<span class="fc" id="L43">            List&lt;Release&gt; filteredReleases = releases.stream()</span>
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">                    .filter(release -&gt; release.getGenres() != null &amp;&amp; !release.getGenres().isEmpty())</span>
+<span class="fc" id="L45">                    .toList();</span>
+
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (filteredReleases.isEmpty()) {</span>
+<span class="fc" id="L48">                log.info(&quot;No releases with genres to process for artist ID: {}&quot;, artistId);</span>
+<span class="fc" id="L49">                return;</span>
+            }
+
+<span class="fc" id="L52">            List&lt;Long&gt; releaseIds = filteredReleases.stream()</span>
+<span class="fc" id="L53">                    .map(Release::getId)</span>
+<span class="fc" id="L54">                    .toList();</span>
+
+<span class="fc" id="L56">            List&lt;Release&gt; existingReleases = releaseRepository.findAllById(releaseIds);</span>
+<span class="fc" id="L57">            Map&lt;Long, Release&gt; existingReleasesMap = existingReleases.stream()</span>
+<span class="fc" id="L58">                    .collect(Collectors.toMap(Release::getId, Function.identity()));</span>
+
+<span class="fc" id="L60">            filteredReleases.forEach(release -&gt; {</span>
+<span class="fc" id="L61">                Release existingRelease = existingReleasesMap.get(release.getId());</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">                if (existingRelease != null) {</span>
+<span class="fc" id="L63">                    existingRelease.setGenres(release.getGenres());</span>
+                } else {
+<span class="nc" id="L65">                    log.warn(&quot;Release ID {} not found. Skipping update.&quot;, release.getId());</span>
+                }
+<span class="fc" id="L67">            });</span>
+
+<span class="fc" id="L69">            releaseRepository.saveAll(existingReleases);</span>
+
+<span class="fc" id="L71">            Artist artist = findArtistWithRetries(artistId);</span>
+<span class="fc" id="L72">            artist.setReleases(filteredReleases);</span>
+<span class="fc" id="L73">            artistRepository.save(artist);</span>
+
+<span class="fc" id="L75">            log.info(&quot;Completed asynchronous enrichment of genres for artist ID: {}&quot;, artistId);</span>
+<span class="nc" id="L76">        } catch (Exception e) {</span>
+<span class="nc" id="L77">            log.error(&quot;Error during asynchronous enrichment for artist ID: {}. Reason: {}&quot;, artistId, e.getMessage(), e);</span>
+<span class="fc" id="L78">        }</span>
+<span class="fc" id="L79">    }</span>
+
+    public void enrichReleases(List&lt;Release&gt; releases) {
+<span class="fc" id="L82">        log.info(&quot;Enriching releases concurrently for {} releases.&quot;, releases.size());</span>
+
+<span class="fc" id="L84">        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {</span>
+<span class="fc" id="L85">            releases.forEach(release -&gt; executor.submit(() -&gt; {</span>
+                try {
+<span class="fc" id="L87">                    var details = discogsApiClient.getReleaseDetails(release.getId());</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                    if (details != null) {</span>
+<span class="fc" id="L89">                        release.setGenres(details.getGenres());</span>
+                    }
+<span class="nc" id="L91">                } catch (Exception e) {</span>
+<span class="nc" id="L92">                    log.warn(&quot;Failed to fetch or enrich release details for ID: {}. Reason: {}&quot;, release.getId(), e.getMessage());</span>
+<span class="fc" id="L93">                }</span>
+<span class="fc" id="L94">            }));</span>
+<span class="nc" id="L95">        } catch (Exception e) {</span>
+<span class="nc" id="L96">            log.error(&quot;Error during concurrent enrichment: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L97">        }</span>
+
+<span class="fc" id="L99">        log.info(&quot;Completed enriching releases.&quot;);</span>
+<span class="fc" id="L100">    }</span>
+
+    @Retry(name = &quot;artistRetry&quot;)
+    public Artist findArtistWithRetries(Long artistId) {
+<span class="fc" id="L104">        return artistRepository.findById(artistId)</span>
+<span class="fc" id="L105">                .orElseThrow(() -&gt; {</span>
+<span class="fc" id="L106">                    log.error(&quot;Artist with ID {} not found during retries.&quot;, artistId);</span>
+<span class="fc" id="L107">                    return new ArtistNotFoundException(&quot;Artist with ID &quot; + artistId + &quot; not found&quot;);</span>
+                });
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

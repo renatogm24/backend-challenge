@@ -91,7 +91,7 @@ public class ArtistSearchService implements ArtistSearchUseCase {
                 });
     }
 
-    private List<Release> fetchReleases(Long artistId, int limit) {
+    public List<Release> fetchReleases(Long artistId, int limit) {
         log.info("Fetching all releases for artist ID: {}", artistId);
 
         int pageSize = 50;

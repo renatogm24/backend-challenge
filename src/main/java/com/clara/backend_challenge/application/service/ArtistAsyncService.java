@@ -78,7 +78,7 @@ public class ArtistAsyncService {
         }
     }
 
-    private void enrichReleases(List<Release> releases) {
+    public void enrichReleases(List<Release> releases) {
         log.info("Enriching releases concurrently for {} releases.", releases.size());
 
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {

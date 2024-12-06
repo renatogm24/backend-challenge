@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArtistComparisonService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend-challenge</a> &gt; <a href="index.source.html" class="el_package">com.clara.backend_challenge.application.service</a> &gt; <span class="el_source">ArtistComparisonService.java</span></div><h1>ArtistComparisonService.java</h1><pre class="source lang-java linenums">package com.clara.backend_challenge.application.service;
+
+import com.clara.backend_challenge.core.domain.ArtistComparisonResult;
+import com.clara.backend_challenge.core.exceptions.InvalidArtistComparisonException;
+import com.clara.backend_challenge.core.ports.input.ArtistComparisonUseCase;
+import com.clara.backend_challenge.core.ports.output.ArtistRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+<span class="fc" id="L12">@Slf4j</span>
+@Service
+public class ArtistComparisonService implements ArtistComparisonUseCase {
+
+    private final ArtistRepository artistRepository;
+
+<span class="fc" id="L18">    public ArtistComparisonService(ArtistRepository artistRepository) {</span>
+<span class="fc" id="L19">        this.artistRepository = artistRepository;</span>
+<span class="fc" id="L20">    }</span>
+
+    @Override
+    public ArtistComparisonResult compareArtists(List&lt;Long&gt; artistIds) {
+<span class="pc bpc" id="L24" title="1 of 4 branches missed.">        if (artistIds == null || artistIds.size() &lt; 2) {</span>
+<span class="fc" id="L25">            log.warn(&quot;Invalid comparison request: Less than two artist IDs provided.&quot;);</span>
+<span class="fc" id="L26">            throw new InvalidArtistComparisonException(&quot;At least two artist IDs are required for comparison.&quot;);</span>
+        }
+
+<span class="fc" id="L29">        log.info(&quot;Starting comparison for artist IDs: {}&quot;, artistIds);</span>
+
+<span class="fc" id="L31">        List&lt;ArtistComparisonResult.ArtistData&gt; comparisonData = artistIds.stream()</span>
+<span class="fc" id="L32">                .map(this::buildComparisonData)</span>
+<span class="fc" id="L33">                .toList();</span>
+
+<span class="fc" id="L35">        log.info(&quot;Comparison completed for artist IDs: {}&quot;, artistIds);</span>
+<span class="fc" id="L36">        return new ArtistComparisonResult(comparisonData);</span>
+    }
+
+    public ArtistComparisonResult.ArtistData buildComparisonData(Long artistId) {
+<span class="fc" id="L40">        log.debug(&quot;Building comparison data for artist ID: {}&quot;, artistId);</span>
+
+<span class="fc" id="L42">        String artistName = artistRepository.findNameById(artistId)</span>
+<span class="fc" id="L43">                .orElseThrow(() -&gt; {</span>
+<span class="fc" id="L44">                    log.error(&quot;Artist with ID {} not found&quot;, artistId);</span>
+<span class="fc" id="L45">                    return new InvalidArtistComparisonException(&quot;Artist with ID &quot; + artistId + &quot; not found&quot;);</span>
+                });
+
+<span class="fc" id="L48">        int numberOfReleases = artistRepository.countReleasesByArtistId(artistId);</span>
+<span class="fc" id="L49">        int activeYears = artistRepository.calculateActiveYearsByArtistId(artistId);</span>
+<span class="fc" id="L50">        List&lt;String&gt; commonGenres = artistRepository.findMostCommonGenresByArtistId(artistId);</span>
+
+<span class="fc" id="L52">        log.debug(&quot;Artist ID {} - Name: {}, Releases: {}, Active Years: {}, Common Genres: {}&quot;,</span>
+<span class="fc" id="L53">                artistId, artistName, numberOfReleases, activeYears, commonGenres);</span>
+
+<span class="fc" id="L55">        return new ArtistComparisonResult.ArtistData(</span>
+                artistId,
+                artistName,
+                numberOfReleases,
+                activeYears,
+                commonGenres
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

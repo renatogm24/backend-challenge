@@ -1,0 +1,126 @@
+{
+	"info": {
+		"_postman_id": "a6600b9d-48e8-4ed0-9c77-ea27a7567102",
+		"name": "Clara",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38575718"
+	},
+	"item": [
+		{
+			"name": "searchArtists",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/artists/search?name=Bruno Mars",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"artists",
+						"search"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Bruno Mars"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getArtistDetails Basic",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"page\": 0,\r\n    \"size\": 5\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/artists/819015",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"artists",
+						"819015"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getArtistDetails Adv",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"fetchAll\": true,\r\n  \"force\": true,\r\n  \"limit\": 50,\r\n  \"page\": 0,\r\n  \"size\": 5\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/artists/1357693",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"artists",
+						"1357693"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "compareArtists",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"artistIds\": [\"819015\", \"1357693\"]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/comparison",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"comparison"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

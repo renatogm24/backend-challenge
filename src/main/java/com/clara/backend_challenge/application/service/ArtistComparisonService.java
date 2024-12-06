@@ -36,7 +36,7 @@ public class ArtistComparisonService implements ArtistComparisonUseCase {
         return new ArtistComparisonResult(comparisonData);
     }
 
-    private ArtistComparisonResult.ArtistData buildComparisonData(Long artistId) {
+    public ArtistComparisonResult.ArtistData buildComparisonData(Long artistId) {
         log.debug("Building comparison data for artist ID: {}", artistId);
 
         String artistName = artistRepository.findNameById(artistId)

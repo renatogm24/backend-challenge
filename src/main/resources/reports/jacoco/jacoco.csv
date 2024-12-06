@@ -1,0 +1,4 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+backend-challenge,com.clara.backend_challenge.application.service,ArtistComparisonService,0,118,1,3,0,24,1,6,0,5
+backend-challenge,com.clara.backend_challenge.application.service,ArtistAsyncService,38,166,2,8,7,47,2,13,0,10
+backend-challenge,com.clara.backend_challenge.application.service,ArtistSearchService,11,284,2,8,2,53,2,15,0,12

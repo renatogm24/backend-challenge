@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArtistSearchService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend-challenge</a> &gt; <a href="index.source.html" class="el_package">com.clara.backend_challenge.application.service</a> &gt; <span class="el_source">ArtistSearchService.java</span></div><h1>ArtistSearchService.java</h1><pre class="source lang-java linenums">package com.clara.backend_challenge.application.service;
+
+import com.clara.backend_challenge.core.domain.Artist;
+import com.clara.backend_challenge.core.domain.Release;
+import com.clara.backend_challenge.core.exceptions.ArtistNotFoundException;
+import com.clara.backend_challenge.core.ports.input.ArtistSearchUseCase;
+import com.clara.backend_challenge.core.ports.output.ArtistRepository;
+import com.clara.backend_challenge.core.ports.output.DiscogsApiClient;
+import com.clara.backend_challenge.core.ports.output.ReleaseRepository;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+<span class="fc" id="L26">@Slf4j</span>
+@Service
+public class ArtistSearchService implements ArtistSearchUseCase {
+
+    private final ArtistRepository artistRepository;
+    private final ReleaseRepository releaseRepository;
+    private final DiscogsApiClient discogsApiClient;
+    private final ArtistAsyncService artistAsyncService;
+
+<span class="fc" id="L35">    public ArtistSearchService(ArtistRepository artistRepository, ReleaseRepository releaseRepository, DiscogsApiClient discogsApiClient, ArtistAsyncService artistAsyncService) {</span>
+<span class="fc" id="L36">        this.artistRepository = artistRepository;</span>
+<span class="fc" id="L37">        this.releaseRepository = releaseRepository;</span>
+<span class="fc" id="L38">        this.discogsApiClient = discogsApiClient;</span>
+<span class="fc" id="L39">        this.artistAsyncService = artistAsyncService;</span>
+<span class="fc" id="L40">    }</span>
+
+    @Override
+    public List&lt;Artist&gt; searchArtists(String name) {
+<span class="fc" id="L44">        log.info(&quot;Searching for artists with name: {}&quot;, name);</span>
+<span class="fc" id="L45">        return discogsApiClient.searchArtists(name);</span>
+    }
+
+    @Override
+    @Transactional
+    public Artist getArtistDetails(Long artistId, boolean fetchAll, boolean force, int limit, int page, int size) {
+<span class="fc" id="L51">        log.info(&quot;Fetching artist details for ID: {}, fetchAll: {}, force: {}, limit: {}, page: {}, size: {}&quot;,</span>
+<span class="fc" id="L52">                artistId, fetchAll, force, limit, page, size);</span>
+
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (!force) {</span>
+<span class="fc" id="L55">            var optionalArtist = artistRepository.findById(artistId, PageRequest.of(page, size, Sort.by(&quot;year&quot;).descending()));</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            if (optionalArtist.isPresent()) {</span>
+<span class="fc" id="L57">                log.info(&quot;Artist ID {} found in the database. Returning cached data.&quot;, artistId);</span>
+<span class="fc" id="L58">                return optionalArtist.get();</span>
+            }
+        }
+
+<span class="fc" id="L62">        Artist artist = fetchArtistFromApi(artistId);</span>
+
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        List&lt;Release&gt; releases = fetchAll</span>
+<span class="fc" id="L65">                ? fetchReleases(artistId, discogsApiClient.getTotalItemsReleaseByArtist(artistId))</span>
+<span class="pc" id="L66">                : fetchReleases(artistId, limit);</span>
+
+<span class="fc" id="L68">        Set&lt;Long&gt; existingReleaseIds = releaseRepository.findAllIdsByArtistId(artistId);</span>
+
+<span class="fc" id="L70">        List&lt;Release&gt; filteredReleases = releases.stream()</span>
+<span class="fc" id="L71">                .filter(distinctById(Release::getId))</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">                .filter(release -&gt; !existingReleaseIds.contains(release.getId()))</span>
+<span class="fc" id="L73">                .toList();</span>
+
+<span class="fc" id="L75">        artist.setReleases(filteredReleases);</span>
+
+<span class="fc" id="L77">        artistRepository.save(artist);</span>
+
+<span class="fc" id="L79">        artistAsyncService.enrichReleasesAsync(filteredReleases, artistId);</span>
+
+<span class="fc" id="L81">        return artistRepository.findById(artistId, PageRequest.of(page, size, Sort.by(&quot;year&quot;).descending()))</span>
+<span class="fc" id="L82">                .orElse(artist);</span>
+    }
+
+    private Artist fetchArtistFromApi(Long artistId) {
+<span class="fc" id="L86">        log.info(&quot;Fetching artist details from API for ID: {}&quot;, artistId);</span>
+<span class="fc" id="L87">        return Optional.ofNullable(discogsApiClient.getArtistDetails(artistId))</span>
+<span class="fc" id="L88">                .orElseThrow(() -&gt; {</span>
+<span class="fc" id="L89">                    log.error(&quot;Artist with ID {} not found in Discogs API.&quot;, artistId);</span>
+<span class="fc" id="L90">                    return new ArtistNotFoundException(&quot;Artist with ID &quot; + artistId + &quot; not found in Discogs API.&quot;);</span>
+                });
+    }
+
+    public List&lt;Release&gt; fetchReleases(Long artistId, int limit) {
+<span class="fc" id="L95">        log.info(&quot;Fetching all releases for artist ID: {}&quot;, artistId);</span>
+
+<span class="fc" id="L97">        int pageSize = 50;</span>
+<span class="fc" id="L98">        int totalPages = (int) Math.ceil((double) limit / pageSize);</span>
+<span class="fc" id="L99">        List&lt;Release&gt; releases = Collections.synchronizedList(new ArrayList&lt;&gt;());</span>
+
+<span class="fc" id="L101">        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (int page = 0; page &lt; totalPages; page++) {</span>
+<span class="fc" id="L103">                int currentPage = page;</span>
+<span class="fc" id="L104">                executor.submit(() -&gt; {</span>
+<span class="fc" id="L105">                    List&lt;Release&gt; pageReleases = fetchPaginatedReleases(artistId, currentPage, pageSize);</span>
+<span class="fc" id="L106">                    releases.addAll(pageReleases);</span>
+<span class="fc" id="L107">                });</span>
+            }
+<span class="nc" id="L109">        } catch (Exception e) {</span>
+<span class="nc" id="L110">            log.error(&quot;Error while fetching releases: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L111">        }</span>
+
+<span class="fc" id="L113">        log.info(&quot;Fetched {} releases for artist ID: {}&quot;, releases.size(), artistId);</span>
+<span class="fc" id="L114">        return releases;</span>
+    }
+
+    private List&lt;Release&gt; fetchPaginatedReleases(Long artistId, int page, int size) {
+<span class="fc" id="L118">        log.info(&quot;Fetching paginated releases for artist ID: {}, page: {}, size: {}&quot;, artistId, page, size);</span>
+<span class="fc" id="L119">        return discogsApiClient.getReleasesByArtist(artistId, page, size);</span>
+    }
+
+    private static &lt;T&gt; Predicate&lt;T&gt; distinctById(Function&lt;? super T, ?&gt; idExtractor) {
+<span class="fc" id="L123">        Set&lt;Object&gt; seen = ConcurrentHashMap.newKeySet();</span>
+<span class="fc" id="L124">        return t -&gt; seen.add(idExtractor.apply(t));</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
