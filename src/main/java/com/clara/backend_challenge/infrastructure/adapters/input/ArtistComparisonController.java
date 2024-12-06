@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/comparison")
+@RequestMapping("/api/v1/comparison")
 @Tag(name = "Artist Comparison", description = "Endpoints for comparing artists based on various criteria.")
 public class ArtistComparisonController {
 

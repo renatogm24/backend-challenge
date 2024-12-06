@@ -33,8 +33,8 @@ resilience4j:
         max-attempts: 3
         wait-duration: 2000ms
       artistRetry:
-        max-attempts: 5
-        wait-duration: 5000ms
+        max-attempts: 50
+        wait-duration: 500ms
     instances:
       discogsApi:
         base-config: default

@@ -6,6 +6,7 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
@@ -18,7 +19,12 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "releases")
+@Table(
+        name = "releases",
+        indexes = {
+                @Index(name = "idx_release_year", columnList = "year")
+        }
+)
 public class ReleaseEntity {
 
     @Id

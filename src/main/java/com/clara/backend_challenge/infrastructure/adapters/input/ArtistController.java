@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/artists")
+@RequestMapping("/api/v1/artists")
 @Tag(name = "Artist Management", description = "Endpoints for searching artists and their discography.")
 public class ArtistController {
 

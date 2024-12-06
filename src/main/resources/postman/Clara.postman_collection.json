@@ -12,7 +12,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/api/artists/search?name=Bruno Mars",
+					"raw": "http://localhost:8080/api/v1/artists/search?name=Bruno Mars",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -20,6 +20,7 @@
 					"port": "8080",
 					"path": [
 						"api",
+						"v1",
 						"artists",
 						"search"
 					],
@@ -48,7 +49,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/artists/819015",
+					"raw": "http://localhost:8080/api/v1/artists/819015",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -56,6 +57,7 @@
 					"port": "8080",
 					"path": [
 						"api",
+						"v1",
 						"artists",
 						"819015"
 					]
@@ -78,7 +80,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/artists/1357693",
+					"raw": "http://localhost:8080/api/v1/artists/1357693",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -86,6 +88,7 @@
 					"port": "8080",
 					"path": [
 						"api",
+						"v1",
 						"artists",
 						"1357693"
 					]
@@ -108,7 +111,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/comparison",
+					"raw": "http://localhost:8080/api/v1/comparison",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -116,6 +119,7 @@
 					"port": "8080",
 					"path": [
 						"api",
+						"v1",
 						"comparison"
 					]
 				}
