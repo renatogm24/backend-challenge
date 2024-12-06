@@ -26,12 +26,12 @@ public class Artist {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Artist artist = (Artist) o;
-        return Objects.equals(id, artist.id) && Objects.equals(name, artist.name) && Objects.equals(profile, artist.profile) && Objects.equals(primaryImage, artist.primaryImage) && Objects.equals(releases, artist.releases);
+        return Objects.equals(id, artist.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, profile, primaryImage, releases);
+        return Objects.hash(id);
     }
 
     @Override
@@ -77,11 +77,11 @@ public class Artist {
         this.primaryImage = primaryImage;
     }
 
-    public List<Release> getAlbums() {
+    public List<Release> getReleases() {
         return releases;
     }
 
-    public void setAlbums(List<Release> releases) {
+    public void setReleases(List<Release> releases) {
         this.releases = releases;
     }
 }

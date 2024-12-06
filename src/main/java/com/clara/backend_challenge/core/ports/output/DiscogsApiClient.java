@@ -8,6 +8,7 @@ import java.util.List;
 public interface DiscogsApiClient {
     List<Artist> searchArtists(String name);
     Artist getArtistDetails(Long artistId);
-    List<Release> getArtistReleases(Long artistId);
+    List<Release> getReleasesByArtist(Long artistId, int page, int size);
     Release getReleaseDetails(Long releaseId);
+    Integer getTotalItemsReleaseByArtist(Long artistId);
 }

@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface ArtistSearchUseCase {
     List<Artist> searchArtists(String name);
-    Artist getArtistDetails(Long artistId);
+    Artist getArtistDetails(Long artistId, boolean fetchAll, boolean force, int limit, int page, int size);
 }

@@ -9,12 +9,12 @@ public class Release {
     private String type;
     private Integer year;
     private String thumbnail;
-    private List<Genre> genres;
+    private List<String> genres;
 
     public Release() {
     }
 
-    public Release(Long id, String title, String type, Integer year, String thumbnail, List<Genre> genres) {
+    public Release(Long id, String title, String type, Integer year, String thumbnail, List<String> genres) {
         this.id = id;
         this.title = title;
         this.type = type;
@@ -28,12 +28,12 @@ public class Release {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Release release = (Release) o;
-        return Objects.equals(id, release.id) && Objects.equals(title, release.title) && Objects.equals(type, release.type) && Objects.equals(year, release.year) && Objects.equals(thumbnail, release.thumbnail) && Objects.equals(genres, release.genres);
+        return Objects.equals(id, release.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, title, type, year, thumbnail, genres);
+        return Objects.hash(id);
     }
 
     @Override
@@ -88,11 +88,11 @@ public class Release {
         this.thumbnail = thumbnail;
     }
 
-    public List<Genre> getGenres() {
+    public List<String> getGenres() {
         return genres;
     }
 
-    public void setGenres(List<Genre> genres) {
+    public void setGenres(List<String> genres) {
         this.genres = genres;
     }
 }

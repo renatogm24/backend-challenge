@@ -10,9 +10,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-webclient:
-  base-url: https://api.discogs.com
-  timeout: 5000
+discogs:
+  api:
+    base-url: https://api.discogs.com
+    token: GXAkocwhxTKZZkbOIPyGAQuyfsgnWMvjWDZMeLCg
 
 resilience4j:
   circuitbreaker:
@@ -31,9 +32,14 @@ resilience4j:
       default:
         max-attempts: 3
         wait-duration: 2000ms
+      artistRetry:
+        max-attempts: 5
+        wait-duration: 5000ms
     instances:
       discogsApi:
         base-config: default
+      artistRetry:
+        base-config: artistRetry
 
 server:
   port: 8080
