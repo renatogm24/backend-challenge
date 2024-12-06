@@ -52,17 +52,6 @@ public class ArtistRepositoryAdapter implements ArtistRepository {
     }
 
     @Override
-    public Optional<Artist> findByIdWithReleases(Long artistId) {
-        return artistRepositoryJpa.findById(artistId)
-                .map(artistMapper::toDomain);
-    }
-
-    @Override
-    public boolean existsById(Long id) {
-        return artistRepositoryJpa.existsById(id);
-    }
-
-    @Override
     public int countReleasesByArtistId(Long artistId) {
         return artistRepositoryJpa.countReleasesByArtistId(artistId);
     }

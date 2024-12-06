@@ -5,6 +5,7 @@ import com.clara.backend_challenge.core.domain.Release;
 import com.clara.backend_challenge.core.exceptions.ArtistNotFoundException;
 import com.clara.backend_challenge.core.ports.output.ArtistRepository;
 import com.clara.backend_challenge.core.ports.output.DiscogsApiClient;
+import com.clara.backend_challenge.core.ports.output.ReleaseRepository;
 import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -12,17 +13,22 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 public class ArtistAsyncService {
 
     private final ArtistRepository artistRepository;
+    private final ReleaseRepository releaseRepository;
     private final DiscogsApiClient discogsApiClient;
 
-    public ArtistAsyncService(ArtistRepository artistRepository, DiscogsApiClient discogsApiClient) {
+    public ArtistAsyncService(ArtistRepository artistRepository, ReleaseRepository releaseRepository, DiscogsApiClient discogsApiClient) {
         this.artistRepository = artistRepository;
+        this.releaseRepository = releaseRepository;
         this.discogsApiClient = discogsApiClient;
     }
 
@@ -33,12 +39,42 @@ public class ArtistAsyncService {
 
         try {
             enrichReleases(releases);
+
+            List<Release> filteredReleases = releases.stream()
+                    .filter(release -> release.getGenres() != null && !release.getGenres().isEmpty())
+                    .toList();
+
+            if (filteredReleases.isEmpty()) {
+                log.info("No releases with genres to process for artist ID: {}", artistId);
+                return;
+            }
+
+            List<Long> releaseIds = filteredReleases.stream()
+                    .map(Release::getId)
+                    .toList();
+
+            List<Release> existingReleases = releaseRepository.findAllById(releaseIds);
+            Map<Long, Release> existingReleasesMap = existingReleases.stream()
+                    .collect(Collectors.toMap(Release::getId, Function.identity()));
+
+            filteredReleases.forEach(release -> {
+                Release existingRelease = existingReleasesMap.get(release.getId());
+                if (existingRelease != null) {
+                    existingRelease.setGenres(release.getGenres());
+                } else {
+                    log.warn("Release ID {} not found. Skipping update.", release.getId());
+                }
+            });
+
+            releaseRepository.saveAll(existingReleases);
+
             Artist artist = findArtistWithRetries(artistId);
-            artist.setReleases(releases);
+            artist.setReleases(filteredReleases);
             artistRepository.save(artist);
+
             log.info("Completed asynchronous enrichment of genres for artist ID: {}", artistId);
         } catch (Exception e) {
-            log.error("Error during asynchronous enrichment for artist ID: {}. Reason: {}", artistId, e.getMessage());
+            log.error("Error during asynchronous enrichment for artist ID: {}. Reason: {}", artistId, e.getMessage(), e);
         }
     }
 

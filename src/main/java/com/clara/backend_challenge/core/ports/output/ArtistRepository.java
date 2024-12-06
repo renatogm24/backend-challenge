@@ -10,8 +10,6 @@ public interface ArtistRepository {
     Optional<Artist> findById(Long id);
     Optional<Artist> findById(Long id, Pageable pageable);
     Artist save(Artist artist);
-    Optional<Artist> findByIdWithReleases(Long artistId);
-    boolean existsById(Long id);
     int countReleasesByArtistId(Long artistId);
     int calculateActiveYearsByArtistId(Long artistId);
     List<String> findMostCommonGenresByArtistId(Long artistId);

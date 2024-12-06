@@ -6,6 +6,7 @@ import com.clara.backend_challenge.core.exceptions.ArtistNotFoundException;
 import com.clara.backend_challenge.core.ports.input.ArtistSearchUseCase;
 import com.clara.backend_challenge.core.ports.output.ArtistRepository;
 import com.clara.backend_challenge.core.ports.output.DiscogsApiClient;
+import com.clara.backend_challenge.core.ports.output.ReleaseRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -27,11 +28,13 @@ import java.util.function.Predicate;
 public class ArtistSearchService implements ArtistSearchUseCase {
 
     private final ArtistRepository artistRepository;
+    private final ReleaseRepository releaseRepository;
     private final DiscogsApiClient discogsApiClient;
     private final ArtistAsyncService artistAsyncService;
 
-    public ArtistSearchService(ArtistRepository artistRepository, DiscogsApiClient discogsApiClient, ArtistAsyncService artistAsyncService) {
+    public ArtistSearchService(ArtistRepository artistRepository, ReleaseRepository releaseRepository, DiscogsApiClient discogsApiClient, ArtistAsyncService artistAsyncService) {
         this.artistRepository = artistRepository;
+        this.releaseRepository = releaseRepository;
         this.discogsApiClient = discogsApiClient;
         this.artistAsyncService = artistAsyncService;
     }
@@ -62,8 +65,11 @@ public class ArtistSearchService implements ArtistSearchUseCase {
                 ? fetchReleases(artistId, discogsApiClient.getTotalItemsReleaseByArtist(artistId))
                 : fetchReleases(artistId, limit);
 
+        Set<Long> existingReleaseIds = releaseRepository.findAllIdsByArtistId(artistId);
+
         List<Release> filteredReleases = releases.stream()
                 .filter(distinctById(Release::getId))
+                .filter(release -> !existingReleaseIds.contains(release.getId()))
                 .toList();
 
         artist.setReleases(filteredReleases);
